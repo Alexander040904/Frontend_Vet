@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import LandingPage from './components/LadingPage'
 import Login from './components/auth/Login'
+import Register from './components/auth/Register'
 
 function AppContent() {
     const [currentView, setCurrentView] = useState<'landing' | 'login' | 'register'>('landing')
@@ -13,6 +14,13 @@ function AppContent() {
       return (
         <Login
           onSwitchToRegister={() => setCurrentView('register')}
+          onBack={() => setCurrentView('landing')}
+        />
+      )
+      case 'register':
+      return (
+        <Register
+          onSwitchToLogin={() => setCurrentView('login')}
           onBack={() => setCurrentView('landing')}
         />
       )
