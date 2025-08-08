@@ -20,6 +20,9 @@
 Este proyecto está construido con:
 
   * **React:** Biblioteca principal para la interfaz de usuario.
+  * **Tailwindcss:** Biblioteca de estilos 
+  * **Lucide-react** Biblioteca de iconos
+  * **Shadcn:** Blioteca de componentes
 
 -----
 
