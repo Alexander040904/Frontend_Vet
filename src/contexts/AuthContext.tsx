@@ -1,18 +1,18 @@
 "use client";
 
 import axios from "axios";
+import { use } from "passport";
 import React, { createContext, useContext, useState } from "react";
 
-export type UserRole = "client" | "veterinarian";
+export type UserRole = "1" | "2";
 
 export interface User {
-  id: string;
   name: string;
   email: string;
-  age?: number;
-  role: UserRole;
-  specialization?: string;
-  isAvailable?: boolean;
+  role_id: UserRole;
+  password?: string;
+  password_confirmation?: string;
+ 
 }
 
 interface AuthResponse {
@@ -24,8 +24,8 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (
-    userData: Partial<User> & { password: string }
-  ) => Promise<boolean>;
+    userData: Partial<User> 
+  ) => Promise<AuthResponse>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => void;
   deleteProfile: () => void;
@@ -34,32 +34,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Datos simulados de usuarios
-const mockUsers: (User & { password: string })[] = [
+const mockUsers: (User)[] = [
   {
-    id: "1",
+    
     name: "Juan Pérez",
     email: "juan@cliente.com",
+    role_id: "2",
     password: "123456",
-    age: 30,
-    role: "client",
+  
+   
   },
   {
-    id: "2",
+    
     name: "Dr. María García",
     email: "maria@vet.com",
     password: "123456",
-    role: "veterinarian",
-    specialization: "Medicina General",
-    isAvailable: true,
+    role_id: "2",
+
   },
   {
-    id: "3",
+ 
     name: "Dr. Carlos López",
     email: "carlos@vet.com",
     password: "123456",
-    role: "veterinarian",
-    specialization: "Cirugía",
-    isAvailable: false,
+    role_id: "1",
+
   },
 ];
 
@@ -117,32 +116,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (
-    userData: Partial<User> & { password: string }
-  ): Promise<boolean> => {
-    const existingUser = mockUsers.find((u) => u.email === userData.email);
-    if (existingUser) {
-      return false;
+    userData: Partial<User> 
+  ): Promise<AuthResponse> => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/register`,userData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("Registration successful:", response.data.data);
+
+      // Guardar el usuario registrado
+      localStorage.setItem("auth_token", response.data.token.plainTextToken);
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+
+      console.log("Toke: ", localStorage.getItem("auth_token"));
+
+      return {
+        status: true,
+        message: response.data.message,
+      };
+      
+
+
+
+    }catch (err: unknown) {
+      let errorMessage = "Error al registrarse";
+
+      if (axios.isAxiosError(err)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (err.response?.data as { message?: string })?.message ||
+          err.message ||
+          errorMessage;
+
+        console.error("Login failed:", err.response?.data || err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
+
+      return {
+        status: false,
+        message: errorMessage,
+      };
     }
 
-    const newUser = {
-      id: Date.now().toString(),
-      name: userData.name || "",
-      email: userData.email || "",
-      age: userData.age,
-      role: userData.role || "client",
-      password: userData.password,
-    };
 
-    mockUsers.push(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem("user", JSON.stringify(userWithoutPassword));
-    return true;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
+  const logout = async() => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/logout`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+      console.log("Logout successful:", response.data);
+      localStorage.removeItem("auth_token");
+    } catch (err: unknown) {
+      let errorMessage = "Error al iniciar sesión";
+
+      if (axios.isAxiosError(err)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (err.response?.data as { message?: string })?.message ||
+          err.message ||
+          errorMessage;
+
+        console.error("Login failed:", err.response?.data || err.message);
+      } else {
+        console.error("Unexpected error:", err);
+      }
+    }
+    
   };
 
   const updateProfile = (userData: Partial<User>) => {
