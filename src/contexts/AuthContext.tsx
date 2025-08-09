@@ -1,12 +1,12 @@
 "use client";
 
 import axios from "axios";
-import { use } from "passport";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState,useEffect } from "react";
 
 export type UserRole = "1" | "2";
 
 export interface User {
+  id: string
   name: string;
   email: string;
   role_id: UserRole;
@@ -33,10 +33,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+
+  
+
 // Datos simulados de usuarios
 const mockUsers: (User)[] = [
   {
-    
+    id: "1",
     name: "Juan Pérez",
     email: "juan@cliente.com",
     role_id: "2",
@@ -45,7 +48,7 @@ const mockUsers: (User)[] = [
    
   },
   {
-    
+    id: "2",
     name: "Dr. María García",
     email: "maria@vet.com",
     password: "123456",
@@ -53,7 +56,7 @@ const mockUsers: (User)[] = [
 
   },
   {
- 
+    id: "3",
     name: "Dr. Carlos López",
     email: "carlos@vet.com",
     password: "123456",
@@ -64,6 +67,13 @@ const mockUsers: (User)[] = [
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+    useEffect(() => {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
+
 
   const login = async (
     email: string,
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Si quieres guardar el token
       const token = response.data.token;
       localStorage.setItem("auth_token", token);
-
+      setUser(response.data.user);
       // Si también quieres guardar datos del usuario
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
@@ -128,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
       console.log("Registration successful:", response.data.data);
+      setUser(response.data.data);
 
       // Guardar el usuario registrado
       localStorage.setItem("auth_token", response.data.token.plainTextToken);
