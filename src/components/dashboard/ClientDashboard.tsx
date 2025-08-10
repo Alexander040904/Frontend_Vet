@@ -2,28 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "../ui/card";
 import { Badge } from "../ui/badge";
-import {
-  AlertTriangle,
-  MessageCircle,
-  User,
-  Clock,
-  CheckCircle,
-  XCircle,
-  PawPrint,
-} from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
-import {
-  useEmergency,
-  type EmergencyRequest,
-} from "../../contexts/EmergencyContext2";
+import { AlertTriangle, MessageCircle, Clock, User, CheckCircle, XCircle, PawPrint, } from "lucide-react";
+import { useAuth, type User as Vet } from "../../contexts/AuthContext";
+import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext2";
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
 import Profile from "../Profile";
@@ -33,26 +16,33 @@ export default function ClientDashboard() {
     "dashboard" | "emergency" | "chat" | "profile"
   >("dashboard");
   const { user } = useAuth();
-  const { emergencyRequests, currentEmergency, setCurrentEmergency } =
+  const { showVetEmergencyRequests, emergencyRequests, currentEmergency, setCurrentEmergency } =
     useEmergency();
 
   const [userRequests, setUserRequests] = useState<EmergencyRequest[]>([]);
-  const [activeRequest, setActiveRequest] = useState<
-    EmergencyRequest | undefined
-  >();
+  const [activeRequest, setActiveRequest] = useState<EmergencyRequest | undefined>();
+  const [vet, setVet] = useState<Vet | null>(null);
 
   useEffect(() => {
-    async function fetchRequests() {
+    const fetchRequests = async () => {
       try {
         const requests = await emergencyRequests();
         setUserRequests(requests);
-        setActiveRequest(requests.find((req) => req.status === "accepted"));
+
+        const acceptedRequest = requests.find((req) => req.status === "accepted");
+        setActiveRequest(acceptedRequest);
+        if (acceptedRequest?.assigned_vet_id !== undefined) {
+          const vetData = await showVetEmergencyRequests(acceptedRequest.assigned_vet_id);
+          setVet(vetData);
+        }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching requests:", error);
       }
-    }
+    };
+
     fetchRequests();
   }, []);
+
   const handleEmergencyClick = () => {
     setActiveView("emergency");
   };
@@ -190,20 +180,7 @@ export default function ClientDashboard() {
                             <h3 className="font-semibold text-gray-900 text-lg">
                               {request.species} - {request.breed}
                             </h3>
-                            <p className="text-sm text-gray-500 flex items-center mt-1">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {request.created_at
-                                ? new Date(
-                                    request.created_at
-                                  ).toLocaleDateString()
-                                : "Fecha no disponible"}{" "}
-                              a las{" "}
-                              {request.created_at
-                                ? new Date(
-                                    request.created_at
-                                  ).toLocaleTimeString()
-                                : "Hora no disponible"}
-                            </p>
+
                           </div>
                           <div className="flex items-center space-x-3">
                             <Badge
@@ -211,10 +188,10 @@ export default function ClientDashboard() {
                                 request.status === "pending"
                                   ? "secondary"
                                   : request.status === "accepted"
-                                  ? "default"
-                                  : request.status === "rejected"
-                                  ? "destructive"
-                                  : "outline"
+                                    ? "default"
+                                    : request.status === "rejected"
+                                      ? "destructive"
+                                      : "outline"
                               }
                               className="flex items-center space-x-1"
                             >
@@ -231,10 +208,10 @@ export default function ClientDashboard() {
                                 {request.status === "pending"
                                   ? "Pendiente"
                                   : request.status === "accepted"
-                                  ? "Aceptada"
-                                  : request.status === "rejected"
-                                  ? "Rechazada"
-                                  : "Completada"}
+                                    ? "Aceptada"
+                                    : request.status === "rejected"
+                                      ? "Rechazada"
+                                      : "Completada"}
                               </span>
                             </Badge>
                             {request.status === "accepted" && (
@@ -252,6 +229,20 @@ export default function ClientDashboard() {
                         <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
                           <p>
                             <strong>Síntomas:</strong> {request.symptoms}
+                            <p className="text-sm text-gray-500 flex items-center mt-1">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {request.created_at
+                                ? new Date(
+                                  request.created_at
+                                ).toLocaleDateString()
+                                : "Fecha no disponible"}{" "}
+                              a las{" "}
+                              {request.created_at
+                                ? new Date(
+                                  request.created_at
+                                ).toLocaleTimeString()
+                                : "Hora no disponible"}
+                            </p>
                           </p>
                         </div>
                       </div>
@@ -263,7 +254,7 @@ export default function ClientDashboard() {
           </div>
 
           {/* Active Chat */}
-          {/* <div className="lg:col-span-1">
+          <div className="lg:col-span-1">
             {activeRequest ? (
               <Card className="border-0 shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
                 <CardHeader className="pb-4">
@@ -274,7 +265,7 @@ export default function ClientDashboard() {
                     Chat Activo
                   </CardTitle>
                   <CardDescription className="text-green-100">
-                    Conectado con Dr. {activeRequest.veterinarianName}
+                    Conectado con Dr. {(vet?.name) || "Veterinario"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -282,7 +273,7 @@ export default function ClientDashboard() {
                     <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
                       <p className="text-sm font-medium">Caso:</p>
                       <p className="text-green-100">
-                        {activeRequest.pet.species} - {activeRequest.pet.breed}
+                        {activeRequest.species} - {activeRequest.breed}
                       </p>
                     </div>
                   </div>
@@ -316,7 +307,7 @@ export default function ClientDashboard() {
                 </CardContent>
               </Card>
             )}
-          </div> */}
+          </div>
         </div>
       </main>
     </div>

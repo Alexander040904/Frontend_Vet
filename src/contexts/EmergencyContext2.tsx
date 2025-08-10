@@ -1,4 +1,5 @@
 import axios from "axios";
+import { type User } from "../contexts/AuthContext";
 import React, { createContext, useContext, useState } from "react";
 
 export interface EmergencyRequest {
@@ -21,6 +22,7 @@ interface EmergencyContextType {
   setCurrentEmergency: (emergency: EmergencyRequest | null) => void;
   createEmergencyRequest: (data: EmergencyRequest) => Promise<EmergencyRequest>;
   emergencyRequests: () => Promise<EmergencyRequest[]>;
+  showVetEmergencyRequests: (id: number) => Promise<User>;
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(
@@ -85,10 +87,39 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       return Promise.reject(error);
     }
   };
+  const showVetEmergencyRequests = async (id:number): Promise<User> => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/profile/${id}`, {headers:{
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      }})
+
+      return response.data;
+
+    } catch (error) {
+      let errorMessage = "Error al obtener las solicitudes de emergencia del veterinario";
+
+      if (axios.isAxiosError(error)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+
+        console.error("Error fetching vet emergency requests:", error.response?.data || error.message);
+      } else {
+        console.error("Unexpected error:", error);
+      }
+
+      return Promise.reject(new Error(errorMessage));
+      
+    }
+
+  }
 
   return (
     <EmergencyContext.Provider
-      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency }}
+      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests }}
     >
       {children}
     </EmergencyContext.Provider>
