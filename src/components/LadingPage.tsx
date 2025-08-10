@@ -1,8 +1,8 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Clock, MessageCircle, Shield, Phone, Users } from 'lucide-react'
+import { Button } from './ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Heart, Clock, MessageCircle, Shield, Phone, Users, PawPrint } from 'lucide-react'
 
 interface LandingPageProps {
   onGetStarted: () => void
@@ -17,7 +17,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
               <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-lg">
-                <Heart className="h-6 w-6 text-white" />
+                <PawPrint className="h-6 w-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
                 VetEmergency
@@ -34,7 +34,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-9 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <div className="mb-8">
             <div className="inline-flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">

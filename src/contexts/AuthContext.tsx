@@ -1,69 +1,59 @@
 "use client";
 
 import axios from "axios";
-import { use } from "passport";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type UserRole = "1" | "2";
 
+// Definimos la interfaz del usuario
 export interface User {
+  id?: string;
   name: string;
   email: string;
-  role_id: UserRole;
+  role_id?: UserRole;
   password?: string;
   password_confirmation?: string;
- 
 }
 
 interface AuthResponse {
   status: boolean;
   message: string;
 }
-
+// Definimos el contexto y su tipo
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
-  register: (
-    userData: Partial<User> 
-  ) => Promise<AuthResponse>;
+  register: (userData: Partial<User>) => Promise<AuthResponse>;
   logout: () => void;
-  updateProfile: (userData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<AuthResponse>;
   deleteProfile: () => void;
 }
 
+// Creamos el contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Datos simulados de usuarios
-const mockUsers: (User)[] = [
-  {
-    
-    name: "Juan Pérez",
-    email: "juan@cliente.com",
-    role_id: "2",
-    password: "123456",
-  
-   
-  },
-  {
-    
-    name: "Dr. María García",
-    email: "maria@vet.com",
-    password: "123456",
-    role_id: "2",
 
-  },
-  {
- 
-    name: "Dr. Carlos López",
-    email: "carlos@vet.com",
-    password: "123456",
-    role_id: "1",
 
-  },
-];
-
+// Proveedor del contexto
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulamos la carga, puede ser llamada API o leer localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+
+      // Forzar que role_id siempre sea string
+      parsedUser.role_id = String(parsedUser.role_id) as UserRole;
+
+      setUser(parsedUser);
+    }
+    setLoading(false);
+  }, []);
 
   const login = async (
     email: string,
@@ -85,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Si quieres guardar el token
       const token = response.data.token;
       localStorage.setItem("auth_token", token);
-
+      setUser(response.data.user);
       // Si también quieres guardar datos del usuario
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
@@ -115,12 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (
-    userData: Partial<User> 
-  ): Promise<AuthResponse> => {
+  const register = async (userData: Partial<User>): Promise<AuthResponse> => {
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/register`,userData,
+        `${import.meta.env.VITE_API_URL}/register`,
+        userData,
         {
           headers: {
             "Content-Type": "application/json",
@@ -128,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
       console.log("Registration successful:", response.data.data);
+      setUser(response.data.data);
 
       // Guardar el usuario registrado
       localStorage.setItem("auth_token", response.data.token.plainTextToken);
@@ -139,11 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: true,
         message: response.data.message,
       };
-      
-
-
-
-    }catch (err: unknown) {
+    } catch (err: unknown) {
       let errorMessage = "Error al registrarse";
 
       if (axios.isAxiosError(err)) {
@@ -163,12 +149,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: errorMessage,
       };
     }
-
-
   };
 
-  const logout = async() => {
+  const logout = async () => {
     try {
+      console.log("token: ", localStorage.getItem("auth_token"));
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/logout`,
         {},
@@ -181,6 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       console.log("Logout successful:", response.data);
       localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      setUser(null);
     } catch (err: unknown) {
       let errorMessage = "Error al iniciar sesión";
 
@@ -196,25 +184,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Unexpected error:", err);
       }
     }
+  };
+
+  const updateProfile = async (userData: Partial<User>):Promise<AuthResponse> => {
+    try {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_URL}/profile`,
+        userData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+
+      console.log("Profile updated successfully:", response.data.data);
+      
+      localStorage.setItem("user", JSON.stringify(response.data.data));
+      return {
+        status: true,
+        message: response.data.message,
+      };
+    } catch (error: unknown) {
+      let errorMessage = "Error al actualizar el perfil";
+      if (axios.isAxiosError(error)) {
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+        console.error(
+          "Profile update failed:",
+          error.response?.data || error.message
+        );
+        
+      } else {
+        console.error("Unexpected error:", error);
+      }
+      return {
+        status: false,
+        message: errorMessage,
+      };
     
   };
+}
 
-  const updateProfile = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+const deleteProfile = async (): Promise<AuthResponse> => {
+  try {
+    await axios.delete(`${import.meta.env.VITE_API_URL}/profile`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      },
+    });
+
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user");
+    setUser(null);
+
+    return {
+      status: true,
+      message: "Perfil eliminado correctamente",
+    };
+  } catch (error: unknown) {
+    console.error("Error deleting profile:", error);
+
+    let errorMessage = "Error al eliminar el perfil. Por favor, inténtalo de nuevo más tarde.";
+    if (axios.isAxiosError(error)) {
+      errorMessage =
+        (error.response?.data as { message?: string })?.message ||
+        error.message ||
+        errorMessage;
     }
-  };
 
-  const deleteProfile = () => {
-    logout();
-  };
+    return {
+      status: false,
+      message: errorMessage,
+    };
+  }
+};
+
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        loading,
         login,
         register,
         logout,
@@ -227,6 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Hook para usar el contexto
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
