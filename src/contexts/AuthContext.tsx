@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "axios";
-import React, { createContext, useContext, useState,useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type UserRole = "1" | "2";
 
@@ -12,7 +12,7 @@ export interface User {
   role_id: UserRole;
   password?: string;
   password_confirmation?: string;
- 
+
 }
 
 interface AuthResponse {
@@ -22,9 +22,10 @@ interface AuthResponse {
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (
-    userData: Partial<User> 
+    userData: Partial<User>
   ) => Promise<AuthResponse>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => void;
@@ -34,7 +35,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 
-  
+
 
 // Datos simulados de usuarios
 const mockUsers: (User)[] = [
@@ -44,8 +45,8 @@ const mockUsers: (User)[] = [
     email: "juan@cliente.com",
     role_id: "2",
     password: "123456",
-  
-   
+
+
   },
   {
     id: "2",
@@ -67,12 +68,22 @@ const mockUsers: (User)[] = [
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-    useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
+
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulamos la carga, puede ser llamada API o leer localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+
+      // Forzar que role_id siempre sea string
+      parsedUser.role_id = String(parsedUser.role_id) as UserRole;
+
+      setUser(parsedUser);
     }
-  }, [])
+    setLoading(false);
+  }, []);
 
 
   const login = async (
@@ -126,11 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (
-    userData: Partial<User> 
+    userData: Partial<User>
   ): Promise<AuthResponse> => {
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/register`,userData,
+        `${import.meta.env.VITE_API_URL}/register`, userData,
         {
           headers: {
             "Content-Type": "application/json",
@@ -150,11 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: true,
         message: response.data.message,
       };
-      
 
 
 
-    }catch (err: unknown) {
+
+    } catch (err: unknown) {
       let errorMessage = "Error al registrarse";
 
       if (axios.isAxiosError(err)) {
@@ -178,7 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   };
 
-  const logout = async() => {
+  const logout = async () => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/logout`,
@@ -207,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Unexpected error:", err);
       }
     }
-    
+
   };
 
   const updateProfile = (userData: Partial<User>) => {
@@ -226,6 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        loading,
         login,
         register,
         logout,
