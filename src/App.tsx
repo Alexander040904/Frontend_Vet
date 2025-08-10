@@ -14,13 +14,17 @@ function AppContent() {
 
   const { user, loading } = useAuth();
 
+  
+  console.log("token: ", localStorage.getItem("auth_token"));
+  
+
   if (loading) {
     console.log("Loading user data...");
     
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
   }
 
-  if (user) {
+  if (user && localStorage.getItem("auth_token")) {
     console.log("User is logged in:", user.role_id);
     
     return user.role_id=== '2' ? <ClientDashboard />

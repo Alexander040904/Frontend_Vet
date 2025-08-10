@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { AlertTriangle, MessageCircle, User, LogOut, Heart, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { AlertTriangle, MessageCircle, User, Clock, CheckCircle, XCircle, PawPrint } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useEmergency } from '../../contexts/EmergencyContext'
 import EmergencyForm from '../EmergencyForm'
@@ -13,7 +13,7 @@ import Profile from '../Profile'
 
 export default function ClientDashboard() {
   const [activeView, setActiveView] = useState<'dashboard' | 'emergency' | 'chat' | 'profile'>('dashboard')
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { emergencyRequests, currentEmergency, setCurrentEmergency } = useEmergency()
 
   const userRequests = emergencyRequests.filter(req => req.clientId === user?.id)
@@ -48,7 +48,7 @@ export default function ClientDashboard() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
               <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-lg shadow-lg">
-                <Heart className="h-6 w-6 text-white" />
+                <PawPrint className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
@@ -71,15 +71,7 @@ export default function ClientDashboard() {
                 <User className="h-4 w-4 mr-2" />
                 Perfil
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={logout}
-                className="border-red-200 text-red-600 hover:bg-red-50"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Salir
-              </Button>
+             
             </div>
           </div>
         </div>
