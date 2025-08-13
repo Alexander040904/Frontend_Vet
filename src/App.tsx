@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
-import { EmergencyProvider } from "./contexts/EmergencyContext";
+import { EmergencyProvider } from "./contexts/EmergencyContext2";
 import ClientDashboard from "./components/dashboard/ClientDashboard";
 import LandingPage from "./components/LadingPage";
 

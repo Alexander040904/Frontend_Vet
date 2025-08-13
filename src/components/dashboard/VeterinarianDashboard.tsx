@@ -1,17 +1,49 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
+import { toast } from "sonner"
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { MessageCircle, User, LogOut, Check, X, Bell, PawPrint } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useEmergency } from '../../contexts/EmergencyContext'
+
+import { useEmergency } from '../../contexts/EmergencyContext2'
+
 import Chat from '../Chat'
 import Profile from '../Profile'
 import Echo from '../../lib/echo';
 
 export default function VeterinarianDashboard() {
+
+
+
+    const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'profile'>('dashboard')
+
+
+    /*     const { emergencyRequests, acceptEmergencyRequest, rejectEmergencyRequest, setCurrentEmergency } = useEmergency() */
+    const { user } = useAuth()
+    const { showNotifications, emergencyRequests, aceptEmergencyRequest, readNotification } = useEmergency()
+
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [currentEmergencys, setCurrentEmergencys] = useState<any[]>([]);
+
+    const fetchNotifications = async () => {
+        try {
+            const responseNotifications = await showNotifications();
+            const responseEmergencies = await emergencyRequests();
+
+            setCurrentEmergencys(responseEmergencies);
+            console.log("📬 Notificaciones recibidas:", responseNotifications);
+
+            setNotifications(responseNotifications);
+            console.log("📬 Emergencias recibidas:", responseEmergencies);
+
+        } catch (error) {
+
+        }
+    };
 
     useEffect(() => {
         console.log("📡 Suscribiéndose al canal emergencies.admin...");
@@ -19,7 +51,18 @@ export default function VeterinarianDashboard() {
         const channel = Echo.private("emergencies.admin")
             .listen(".EmergencyNotification", (event: any) => {
                 console.log("🚨 Notificación de emergencia recibida:", event);
-                // Aquí puedes disparar un toast, actualizar un estado, etc.
+
+
+                toast.success("Event has been created", {
+                    description: <span className="text-sm md:text-base">{event.message}</span>,
+
+                    action: {
+                        label: "Ver",
+                        onClick: () => setActiveView('dashboard'),
+                    },
+                })
+
+                fetchNotifications();
             });
 
         // Cleanup al desmontar el componente
@@ -29,28 +72,57 @@ export default function VeterinarianDashboard() {
         };
     }, []);
 
-    const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'profile'>('dashboard')
-    const { user, logout } = useAuth()
-    const { emergencyRequests, acceptEmergencyRequest, rejectEmergencyRequest, setCurrentEmergency } = useEmergency()
 
-    const pendingRequests = emergencyRequests.filter(req => req.status === 'pending')
-    const myAcceptedRequests = emergencyRequests.filter(req =>
-        req.status === 'accepted' && req.veterinarianId === user?.id
-    )
 
-    const handleAcceptRequest = (requestId: string) => {
-        if (user && typeof user.id === 'string') {
-            acceptEmergencyRequest(requestId, user.id, user.name)
+    useEffect(() => {
+
+        fetchNotifications();
+
+    }, []);
+
+
+    const handleAcceptRequest = async (requestId: string, notificationId: string) => {
+        try {
+            const response = await aceptEmergencyRequest(Number(requestId));
+            console.log("✅ Solicitud aceptada:", response);
+            // 2️⃣ Marcar notificación como leída
+            await readNotification(notificationId);
+            console.log("✅ Notificación leída");
+
+            // 3️⃣ Refrescar datos para que el componente se renderice con información actualizada
+            const [updatedNotifications, updatedEmergencies] = await Promise.all([
+                showNotifications(),
+                emergencyRequests(),
+            ]);
+
+            setNotifications(updatedNotifications);
+            setCurrentEmergencys(updatedEmergencies);
+            console.log("📬 Datos actualizados tras aceptar emergencia");
+
+
+        } catch (error) {
+            console.error("Error al aceptar la solicitud:", error);
+
+        }
+
+    }
+
+    const handleRejectRequest = async (notificationId: string) => {
+        try {
+
+            await readNotification(notificationId);
+            console.log("✅ Notificación leída");
+
+            const responseNotifications = await showNotifications();
+            setNotifications(responseNotifications);
+        } catch (error) {
+            console.error("Error al rechazar la solicitud:", error);
         }
     }
 
-    const handleRejectRequest = (requestId: string) => {
-        rejectEmergencyRequest(requestId)
-    }
-
     const handleChatClick = (emergency: any) => {
-        setCurrentEmergency(emergency)
-        setActiveView('chat')
+        /*     setCurrentEmergency(emergency)
+            setActiveView('chat') */
     }
 
     if (activeView === 'chat') {
@@ -115,12 +187,12 @@ export default function VeterinarianDashboard() {
                                     </CardDescription>
                                 </div>
                                 <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                    {pendingRequests.length} Urgentes
+                                    {notifications.length} Urgentes
                                 </Badge>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {pendingRequests.length === 0 ? (
+                            {notifications.length === 0 ? (
                                 <div className="text-center py-12">
                                     <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Bell className="h-8 w-8 text-gray-400" />
@@ -129,8 +201,8 @@ export default function VeterinarianDashboard() {
                                     <p className="text-gray-400 text-sm mt-1">Las nuevas solicitudes aparecerán aquí</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {pendingRequests.map((request) => (
+                                <div className="space-y-4 max-h-130 overflow-y-auto pr-2">
+                                    {notifications.map((request) => (
                                         <div
                                             key={request.id}
                                             className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-4 hover:shadow-md transition-all duration-300"
@@ -139,34 +211,32 @@ export default function VeterinarianDashboard() {
                                                 <div>
                                                     <h3 className="font-semibold text-gray-900 text-lg flex items-center">
                                                         <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                                                        {request.clientName}
+                                                        Paciente: {request.data.species} - {request.data.breed}
                                                     </h3>
                                                     <p className="text-sm text-gray-500">
-                                                        {request.createdAt.toLocaleDateString()} a las {request.createdAt.toLocaleTimeString()}
+                                                        {new Date(request.created_at).toLocaleDateString('es-ES')}
                                                     </p>
                                                 </div>
                                                 <Badge className="bg-red-500 hover:bg-red-500 text-white">URGENTE</Badge>
                                             </div>
 
                                             <div className="space-y-2 mb-4 bg-white/50 rounded-lg p-3">
+
                                                 <p>
-                                                    <strong>Mascota:</strong> {request.pet.species} - {request.pet.breed}
+                                                    <strong>Peso:</strong> {request.data.weight} kg
                                                 </p>
                                                 <p>
-                                                    <strong>Peso:</strong> {request.pet.weight} kg
+                                                    <strong>Síntomas:</strong> {request.data.symptoms}
                                                 </p>
                                                 <p>
-                                                    <strong>Síntomas:</strong> {request.pet.symptoms}
-                                                </p>
-                                                <p>
-                                                    <strong>Descripción:</strong> {request.pet.description}
+                                                    <strong>Descripción:</strong> {request.data.description}
                                                 </p>
                                             </div>
 
                                             <div className="flex space-x-2">
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => handleAcceptRequest(request.id)}
+                                                    onClick={() => handleAcceptRequest(request.data.id, request.id)}
                                                     className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-300"
                                                 >
                                                     <Check className="h-4 w-4 mr-1" />
@@ -205,12 +275,12 @@ export default function VeterinarianDashboard() {
                                     </CardDescription>
                                 </div>
                                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                    {myAcceptedRequests.length} Activos
+                                    {currentEmergencys.length} Activos
                                 </Badge>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {myAcceptedRequests.length === 0 ? (
+                            {currentEmergencys.length === 0 ? (
                                 <div className="text-center py-12">
                                     <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <MessageCircle className="h-8 w-8 text-gray-400" />
@@ -219,8 +289,8 @@ export default function VeterinarianDashboard() {
                                     <p className="text-gray-400 text-sm mt-1">Los casos aceptados aparecerán aquí</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {myAcceptedRequests.map((request) => (
+                                <div className="space-y-4 max-h-130 overflow-y-auto pr-2">
+                                    {currentEmergencys.map((request) => (
                                         <div
                                             key={request.id}
                                             className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 hover:shadow-md transition-all duration-300"
@@ -229,10 +299,10 @@ export default function VeterinarianDashboard() {
                                                 <div>
                                                     <h3 className="font-semibold text-gray-900 text-lg flex items-center">
                                                         <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                                                        {request.clientName}
+                                                        {request.client_name}
                                                     </h3>
                                                     <p className="text-sm text-gray-500">
-                                                        {request.pet.species} - {request.pet.breed}
+                                                        {request.species} - {request.breed}
                                                     </p>
                                                 </div>
                                                 <Badge className="bg-green-500 hover:bg-green-500 text-white">EN CURSO</Badge>
@@ -240,7 +310,7 @@ export default function VeterinarianDashboard() {
 
                                             <div className="mb-4 bg-white/50 rounded-lg p-3">
                                                 <p className="text-sm text-gray-600">
-                                                    <strong>Síntomas:</strong> {request.pet.symptoms}
+                                                    <strong>Síntomas:</strong> {request.symptoms}
                                                 </p>
                                             </div>
 
