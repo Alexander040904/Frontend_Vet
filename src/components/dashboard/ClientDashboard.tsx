@@ -10,11 +10,11 @@ import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyCo
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
 import Profile from "../Profile";
+import Echo from '../../lib/echo';
+import { toast } from "sonner"
 
 export default function ClientDashboard() {
-  const [activeView, setActiveView] = useState<
-    "dashboard" | "emergency" | "chat" | "profile"
-  >("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "emergency" | "chat" | "profile">("dashboard");
   const { user } = useAuth();
   const { emergencyRequests, currentEmergency, setCurrentEmergency } =
     useEmergency();
@@ -22,21 +22,48 @@ export default function ClientDashboard() {
   const [userRequests, setUserRequests] = useState<EmergencyRequest[]>([]);
   const [activeRequest, setActiveRequest] = useState<EmergencyRequest | undefined>();
 
+  const fetchRequests = async () => {
+    try {
+      const requests = await emergencyRequests();
+      setUserRequests(requests);
+
+      const acceptedRequest = requests.find((req) => req.status === "accepted");
+      setActiveRequest(acceptedRequest);
+
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const requests = await emergencyRequests();
-        setUserRequests(requests);
+    if (!user) return;
 
-        const acceptedRequest = requests.find((req) => req.status === "accepted");
-        setActiveRequest(acceptedRequest);
+    const channel = Echo.private(`client.${user.id}`)
+      .listen('.EmergencyAccepted', (event: any) => {
+        console.log('Emergency accepted event received:', event);
 
-      } catch (error) {
-        console.error("Error fetching requests:", error);
-      }
+        toast.success("Alerta", {
+          description: (
+            <span className="text-sm md:text-base">
+              {event.message} - {event.doctor}
+            </span>
+          ),
+          action: {
+            label: "Ver",
+            onClick: () => setActiveView('dashboard'),
+          },
+        });
+
+        fetchRequests();
+      });
+
+    return () => {
+      channel.stopListening('.EmergencyAccepted');
     };
+  }, [user]);
 
+
+  useEffect(() => {
     fetchRequests();
   }, []);
 
@@ -50,6 +77,7 @@ export default function ClientDashboard() {
   };
 
   if (activeView === "emergency") {
+    fetchRequests();
     return <EmergencyForm onBack={() => setActiveView("dashboard")} />;
   }
 
