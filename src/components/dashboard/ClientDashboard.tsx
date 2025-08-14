@@ -10,36 +10,60 @@ import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyCo
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
 import Profile from "../Profile";
+import Echo from '../../lib/echo';
+import { toast } from "sonner"
 
 export default function ClientDashboard() {
-  const [activeView, setActiveView] = useState<
-    "dashboard" | "emergency" | "chat" | "profile"
-  >("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "emergency" | "chat" | "profile">("dashboard");
   const { user } = useAuth();
-  const { showVetEmergencyRequests, emergencyRequests, currentEmergency, setCurrentEmergency } =
+  const { emergencyRequests, currentEmergency, setCurrentEmergency } =
     useEmergency();
 
   const [userRequests, setUserRequests] = useState<EmergencyRequest[]>([]);
   const [activeRequest, setActiveRequest] = useState<EmergencyRequest | undefined>();
-  const [vet, setVet] = useState<Vet | null>(null);
+
+  const fetchRequests = async () => {
+    try {
+      const requests = await emergencyRequests();
+      setUserRequests(requests);
+
+      const acceptedRequest = requests.find((req) => req.status === "accepted");
+      setActiveRequest(acceptedRequest);
+
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const requests = await emergencyRequests();
-        setUserRequests(requests);
+    if (!user) return;
 
-        const acceptedRequest = requests.find((req) => req.status === "accepted");
-        setActiveRequest(acceptedRequest);
-        if (acceptedRequest?.assigned_vet_id !== undefined) {
-          const vetData = await showVetEmergencyRequests(acceptedRequest.assigned_vet_id);
-          setVet(vetData);
-        }
-      } catch (error) {
-        console.error("Error fetching requests:", error);
-      }
+    const channel = Echo.private(`client.${user.id}`)
+      .listen('.EmergencyAccepted', (event: any) => {
+        console.log('Emergency accepted event received:', event);
+
+        toast.success("Alerta", {
+          description: (
+            <span className="text-sm md:text-base">
+              {event.message} - {event.doctor}
+            </span>
+          ),
+          action: {
+            label: "Ver",
+            onClick: () => setActiveView('dashboard'),
+          },
+        });
+
+        fetchRequests();
+      });
+
+    return () => {
+      channel.stopListening('.EmergencyAccepted');
     };
+  }, [user]);
 
+
+  useEffect(() => {
     fetchRequests();
   }, []);
 
@@ -53,6 +77,7 @@ export default function ClientDashboard() {
   };
 
   if (activeView === "emergency") {
+    fetchRequests();
     return <EmergencyForm onBack={() => setActiveView("dashboard")} />;
   }
 
@@ -169,7 +194,7 @@ export default function ClientDashboard() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-130 overflow-y-auto pr-2">
                     {userRequests.map((request) => (
                       <div
                         key={request.id}
@@ -265,7 +290,7 @@ export default function ClientDashboard() {
                     Chat Activo
                   </CardTitle>
                   <CardDescription className="text-green-100">
-                    Conectado con Dr. {(vet?.name) || "Veterinario"}
+                    Conectado con Dr. {(activeRequest?.vet_name) || "Veterinario"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

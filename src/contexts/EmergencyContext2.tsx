@@ -1,11 +1,14 @@
 import axios from "axios";
 import { type User } from "../contexts/AuthContext";
+import { type Notification } from "../types/Notification/Notification";
 import React, { createContext, useContext, useState } from "react";
 
 export interface EmergencyRequest {
   id?: number;
   client_id?: number;
+  client_name?: string;
   assigned_vet_id?: number;
+  vet_name?: string;
   species: string;
   weight: string;
   breed: string;
@@ -17,12 +20,17 @@ export interface EmergencyRequest {
   updated_at?: string;
 }
 
+
+
 interface EmergencyContextType {
   currentEmergency: EmergencyRequest | null;
   setCurrentEmergency: (emergency: EmergencyRequest | null) => void;
   createEmergencyRequest: (data: EmergencyRequest) => Promise<EmergencyRequest>;
   emergencyRequests: () => Promise<EmergencyRequest[]>;
   showVetEmergencyRequests: (id: number) => Promise<User>;
+  showNotifications: () => Promise<Notification[]>;
+  aceptEmergencyRequest: (id: number) => Promise<string>;
+  readNotification: (id: string) => Promise<void>;
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(
@@ -32,7 +40,7 @@ const EmergencyContext = createContext<EmergencyContextType | undefined>(
 export function EmergencyProvider({ children }: { children: React.ReactNode }) {
 
   const [currentEmergency, setCurrentEmergency] = useState<EmergencyRequest | null>(null)
-  
+
 
   const createEmergencyRequest = async (
     data: EmergencyRequest
@@ -76,8 +84,10 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
           },
         }
       );
+      console.log("Emergency requests response:", response.data.data);
 
       return response.data.data;
+
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const message =
@@ -87,12 +97,14 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       return Promise.reject(error);
     }
   };
-  const showVetEmergencyRequests = async (id:number): Promise<User> => {
+  const showVetEmergencyRequests = async (id: number): Promise<User> => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/profile/${id}`, {headers:{
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-      }})
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/profile/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        }
+      })
 
       return response.data;
 
@@ -112,14 +124,106 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       }
 
       return Promise.reject(new Error(errorMessage));
-      
+
     }
 
   }
 
+  const showNotifications = async (): Promise<Notification[]> => {
+    try {
+      // Obtener las notificaciones no leídas del usuario
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/notifications/unread`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        }
+      });
+      return response.data;
+
+    } catch (error: unknown) {
+      let errorMessage = "Error al obtener las notificaciones";
+
+      if (axios.isAxiosError(error)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+
+        console.error("Error fetching notifications:", error.response?.data || error.message);
+      } else {
+        console.error("Unexpected error:", error);
+      }
+
+      return Promise.reject(new Error(errorMessage));
+
+    }
+
+  }
+
+  const aceptEmergencyRequest = async (id: number): Promise<string> => {
+    try {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/emergency-requests/${id}`,
+        {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          }
+        },)
+
+      return response.data.mesagge;
+    } catch (error: unknown) {
+      let errorMessage = "Error al aceptar la solicitud de emergencia";
+
+      if (axios.isAxiosError(error)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+
+        console.error("Error accepting emergency request:", error.response?.data || error.message);
+      } else {
+        console.error("Unexpected error:", error);
+      }
+
+      return Promise.reject(new Error(errorMessage));
+
+    }
+  }
+  const readNotification = async (id: string): Promise<void> => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_API_URL}/notifications/${id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+      console.log("Notification read successfully:", response.data);
+    } catch (error: unknown) {
+      let errorMessage = "Error al eliminar la notificación";
+      if (axios.isAxiosError(error)) {
+        // Si la API devuelve un mensaje en la respuesta, lo usamos
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+
+        console.error("Error delete notification:", error.response?.data || error.message);
+      } else {
+        console.error("Unexpected error:", error);
+      }
+      return Promise.reject(new Error(errorMessage));
+    }
+  };
+
   return (
     <EmergencyContext.Provider
-      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests }}
+      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests, showNotifications, aceptEmergencyRequest, readNotification }}
     >
       {children}
     </EmergencyContext.Provider>
