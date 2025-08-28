@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
 import { ArrowLeft, Send } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { useEmergency } from '../contexts/EmergencyContext'
+import { useEmergency } from '../contexts/EmergencyContext2'
 
 interface ChatProps {
   onBack: () => void
@@ -16,7 +16,7 @@ export default function Chat({ onBack }: ChatProps) {
   const [message, setMessage] = useState('')
   const [timeLeft, setTimeLeft] = useState(24 * 60 * 60) // 24 horas en segundos
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  
+
   const { user } = useAuth()
   const { currentEmergency, sendMessage } = useEmergency()
 
@@ -35,7 +35,7 @@ export default function Chat({ onBack }: ChatProps) {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim() && currentEmergency && user) {
-      sendMessage(currentEmergency.id, user.id, user.name, message.trim())
+      sendMessage(currentEmergency.id, '1', user.name, message.trim())
       setMessage('')
     }
   }
@@ -75,9 +75,9 @@ export default function Chat({ onBack }: ChatProps) {
                   Chat de Emergencia
                 </h1>
                 <p className="text-sm text-gray-500">
-                  {user?.role_id === '2' 
-                    ? `Con Dr. ${currentEmergency.veterinarianName}`
-                    : `Con ${currentEmergency.clientName}`
+                  {user?.role_id === '2'
+                    ? `Con Dr. ${currentEmergency.vet_name}`
+                    : `Con ${currentEmergency.client_name}`
                   }
                 </p>
               </div>
@@ -96,10 +96,10 @@ export default function Chat({ onBack }: ChatProps) {
           <div className="p-4 border-b bg-gray-50">
             <h3 className="font-medium mb-2">Información del Caso</h3>
             <div className="text-sm text-gray-600 grid grid-cols-2 gap-2">
-              <p><strong>Mascota:</strong> {currentEmergency.pet.species} - {currentEmergency.pet.breed}</p>
-              <p><strong>Peso:</strong> {currentEmergency.pet.weight} kg</p>
-              <p><strong>Síntomas:</strong> {currentEmergency.pet.symptoms}</p>
-              <p className="col-span-2"><strong>Descripción:</strong> {currentEmergency.pet.description}</p>
+              <p><strong>Mascota:</strong> {currentEmergency.species} - {currentEmergency.breed}</p>
+              <p><strong>Peso:</strong> {currentEmergency.weight} kg</p>
+              <p><strong>Síntomas:</strong> {currentEmergency.symptoms}</p>
+              <p className="col-span-2"><strong>Descripción:</strong> {currentEmergency.description}</p>
             </div>
           </div>
 
@@ -112,11 +112,10 @@ export default function Chat({ onBack }: ChatProps) {
                   className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      msg.senderId === user?.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800'
-                    }`}
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.senderId === user?.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-800'
+                      }`}
                   >
                     <p className="text-sm font-medium mb-1">{msg.senderName}</p>
                     <p>{msg.content}</p>

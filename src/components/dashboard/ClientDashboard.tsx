@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -22,7 +22,7 @@ export default function ClientDashboard() {
   const [userRequests, setUserRequests] = useState<EmergencyRequest[]>([]);
   const [activeRequest, setActiveRequest] = useState<EmergencyRequest | undefined>();
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const requests = await emergencyRequests();
       setUserRequests(requests);
@@ -30,10 +30,11 @@ export default function ClientDashboard() {
       const acceptedRequest = requests.find((req) => req.status === "accepted");
       setActiveRequest(acceptedRequest);
 
+      console.log("✅ Requests actualizados:", requests);
     } catch (error) {
-      console.error("Error fetching requests:", error);
+      console.error("❌ Error fetching requests:", error);
     }
-  };
+  }, [emergencyRequests]);
 
   useEffect(() => {
     if (!user) return;
@@ -64,8 +65,10 @@ export default function ClientDashboard() {
 
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    if (activeView === "dashboard") {
+      fetchRequests();
+    }
+  }, [activeView, fetchRequests]);
 
   const handleEmergencyClick = () => {
     setActiveView("emergency");
@@ -77,7 +80,7 @@ export default function ClientDashboard() {
   };
 
   if (activeView === "emergency") {
-    fetchRequests();
+
     return <EmergencyForm onBack={() => setActiveView("dashboard")} />;
   }
 
@@ -252,23 +255,23 @@ export default function ClientDashboard() {
                           </div>
                         </div>
                         <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                          <p>
-                            <strong>Síntomas:</strong> {request.symptoms}
-                            <p className="text-sm text-gray-500 flex items-center mt-1">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {request.created_at
-                                ? new Date(
-                                  request.created_at
-                                ).toLocaleDateString()
-                                : "Fecha no disponible"}{" "}
-                              a las{" "}
-                              {request.created_at
-                                ? new Date(
-                                  request.created_at
-                                ).toLocaleTimeString()
-                                : "Hora no disponible"}
-                            </p>
+
+                          <strong>Síntomas:</strong> {request.symptoms}
+                          <p className="text-sm text-gray-500 flex items-center mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {request.created_at
+                              ? new Date(
+                                request.created_at
+                              ).toLocaleDateString()
+                              : "Fecha no disponible"}{" "}
+                            a las{" "}
+                            {request.created_at
+                              ? new Date(
+                                request.created_at
+                              ).toLocaleTimeString()
+                              : "Hora no disponible"}
                           </p>
+
                         </div>
                       </div>
                     ))}

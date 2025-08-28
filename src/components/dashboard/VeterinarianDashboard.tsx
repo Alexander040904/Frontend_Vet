@@ -24,7 +24,7 @@ export default function VeterinarianDashboard() {
 
     /*     const { emergencyRequests, acceptEmergencyRequest, rejectEmergencyRequest, setCurrentEmergency } = useEmergency() */
     const { user } = useAuth()
-    const { showNotifications, emergencyRequests, aceptEmergencyRequest, readNotification } = useEmergency()
+    const { showNotifications, emergencyRequests, aceptEmergencyRequest, readNotification, setCurrentEmergency } = useEmergency()
 
     const [notifications, setNotifications] = useState<any[]>([]);
     const [currentEmergencys, setCurrentEmergencys] = useState<any[]>([]);
@@ -121,8 +121,8 @@ export default function VeterinarianDashboard() {
     }
 
     const handleChatClick = (emergency: any) => {
-        /*     setCurrentEmergency(emergency)
-            setActiveView('chat') */
+        setCurrentEmergency(emergency)
+        setActiveView('chat')
     }
 
     if (activeView === 'chat') {

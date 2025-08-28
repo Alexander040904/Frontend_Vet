@@ -62,16 +62,16 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
   }
 
   const acceptEmergencyRequest = (requestId: string, veterinarianId: string, veterinarianName: string) => {
-    setEmergencyRequests(prev => prev.map(req => 
-      req.id === requestId 
+    setEmergencyRequests(prev => prev.map(req =>
+      req.id === requestId
         ? { ...req, status: 'accepted', veterinarianId, veterinarianName }
         : req
     ))
   }
 
   const rejectEmergencyRequest = (requestId: string) => {
-    setEmergencyRequests(prev => prev.map(req => 
-      req.id === requestId 
+    setEmergencyRequests(prev => prev.map(req =>
+      req.id === requestId
         ? { ...req, status: 'rejected' }
         : req
     ))
@@ -86,8 +86,8 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       timestamp: new Date()
     }
 
-    setEmergencyRequests(prev => prev.map(req => 
-      req.id === requestId 
+    setEmergencyRequests(prev => prev.map(req =>
+      req.id === requestId
         ? { ...req, messages: [...req.messages, newMessage] }
         : req
     ))

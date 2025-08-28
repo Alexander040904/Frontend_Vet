@@ -1,7 +1,9 @@
 import axios from "axios";
 import { type User } from "../contexts/AuthContext";
 import { type Notification } from "../types/Notification/Notification";
+import { type Message } from "../types/Chat/Message";
 import React, { createContext, useContext, useState } from "react";
+
 
 export interface EmergencyRequest {
   id?: number;
@@ -15,6 +17,7 @@ export interface EmergencyRequest {
   symptoms: string;
   description: string;
   status?: "pending" | "accepted" | "rejected" | "completed";
+  chat_id?: number;
   sent_at?: string;
   created_at?: string;
   updated_at?: string;
@@ -31,6 +34,7 @@ interface EmergencyContextType {
   showNotifications: () => Promise<Notification[]>;
   aceptEmergencyRequest: (id: number) => Promise<string>;
   readNotification: (id: string) => Promise<void>;
+  messages: (id: number) => Promise<Message[]>;
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(
@@ -84,7 +88,8 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
           },
         }
       );
-      console.log("Emergency requests response:", response.data.data);
+      let i = 1;
+      console.log("Emergency requests response:", response.data.data, i++);
 
       return response.data.data;
 
@@ -220,10 +225,32 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       return Promise.reject(new Error(errorMessage));
     }
   };
+  const messages = async (id: number): Promise<Message[]> => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/private-chat/${id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+      return response.data.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.message || "Error creando la emergencia";
+        return Promise.reject(new Error(message));
+      }
+      return Promise.reject(error);
+    }
+  };
+
 
   return (
     <EmergencyContext.Provider
-      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests, showNotifications, aceptEmergencyRequest, readNotification }}
+      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests, showNotifications, aceptEmergencyRequest, readNotification, messages }}
     >
       {children}
     </EmergencyContext.Provider>

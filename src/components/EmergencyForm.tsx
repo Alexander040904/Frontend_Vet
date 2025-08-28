@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { ArrowLeft, Heart, PawPrint, SquareActivity } from "lucide-react";
+import { ArrowLeft, PawPrint } from "lucide-react";
 
 import { useEmergency } from "../contexts/EmergencyContext2";
 
@@ -105,7 +105,7 @@ export default function EmergencyForm({ onBack }: EmergencyFormProps) {
                   VetEmergency
                 </h1>
                 <p className="text-sm text-red-800">
-                  Solicitud de Emergencia 
+                  Solicitud de Emergencia
                 </p>
               </div>
             </div>
