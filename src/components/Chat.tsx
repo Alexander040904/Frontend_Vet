@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
 import { ArrowLeft, Send } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { type Message } from '../types/Chat/Message'
 import { useEmergency } from '../contexts/EmergencyContext2'
+import Echo from '@/lib/echo'
+
+
+
 
 interface ChatProps {
   onBack: () => void
@@ -18,7 +23,10 @@ export default function Chat({ onBack }: ChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { user } = useAuth()
-  const { currentEmergency, sendMessage } = useEmergency()
+  const { currentEmergency, sendMessage, messages } = useEmergency();
+
+  //Realizamo un estado para almacenar los mensajes nuevos del chat temporalmente
+  const [userChat, setUserChat] = useState<Message[]>([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -29,16 +37,65 @@ export default function Chat({ onBack }: ChatProps) {
   }, [])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [currentEmergency?.messages])
+    console.log("📡 Suscribiéndose al canal chat.admin...");
+    if (!currentEmergency?.chat_id) return;
+    const channel = Echo.private(`chat.${currentEmergency?.chat_id}`)
+      .listen('.MessageSent', (event: any) => {
+        console.log("📩 New message received:", event);
+        setUserChat((prev) => [...prev, event]);
+      });
+
+    return () => {
+      console.log("❌ Desuscribiéndose del canal chat.admin");
+      channel.stopListening('.MessageSent');
+    };
+  }, [currentEmergency?.chat_id]);
+
+
+
+
+  // Traemos los mensajes 
+  const fetchMessages = useCallback(async () => {
+    try {
+      if (currentEmergency && typeof currentEmergency.chat_id === 'number') {
+        const msgs = await messages(currentEmergency.chat_id);
+        setUserChat(msgs);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  }, [currentEmergency, messages])
+
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages, currentEmergency]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [userChat]);
+
+
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim() && currentEmergency && user) {
-      sendMessage(currentEmergency.id, '1', user.name, message.trim())
-      setMessage('')
+      let newMessage: Partial<Message> = {
+        private_chat_id: currentEmergency.chat_id!,
+        sender_id: parseInt(user.id!),
+        message: message.trim(),
+      }
+      sendMessage(newMessage).then(() => {
+
+        setMessage('');
+      }).catch((err) => {
+        console.error("Error sending message:", err);
+      });
+
     }
   }
+
+
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
@@ -106,21 +163,21 @@ export default function Chat({ onBack }: ChatProps) {
           {/* Mensajes */}
           <div className="flex-1 p-4 overflow-y-auto">
             <div className="space-y-4">
-              {currentEmergency.messages.map((msg) => (
+              {userChat.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${msg.sender_id === Number(user?.id) ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.senderId === user?.id
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.sender_id === Number(user?.id)
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-800'
                       }`}
                   >
-                    <p className="text-sm font-medium mb-1">{msg.senderName}</p>
-                    <p>{msg.content}</p>
+                    {/* <p className="text-sm font-medium mb-1">{msg.senderName}</p> */}
+                    <p>{msg.message}</p>
                     <p className="text-xs mt-1 opacity-75">
-                      {msg.timestamp.toLocaleTimeString()}
+                      {msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}
                     </p>
                   </div>
                 </div>

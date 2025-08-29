@@ -13,6 +13,7 @@ import Profile from "../Profile";
 import Echo from '../../lib/echo';
 import { toast } from "sonner"
 
+
 export default function ClientDashboard() {
   const [activeView, setActiveView] = useState<"dashboard" | "emergency" | "chat" | "profile">("dashboard");
   const { user } = useAuth();
@@ -76,6 +77,7 @@ export default function ClientDashboard() {
 
   const handleChatClick = (emergency: any) => {
     setCurrentEmergency(emergency);
+    console.log("Setting current emergency:", emergency);
     setActiveView("chat");
   };
 

@@ -35,6 +35,7 @@ interface EmergencyContextType {
   aceptEmergencyRequest: (id: number) => Promise<string>;
   readNotification: (id: string) => Promise<void>;
   messages: (id: number) => Promise<Message[]>;
+  sendMessage: (message: Partial<Message>) => Promise<Message>;
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(
@@ -177,7 +178,7 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
           }
         },)
 
-      return response.data.mesagge;
+      return response.data.message;
     } catch (error: unknown) {
       let errorMessage = "Error al aceptar la solicitud de emergencia";
 
@@ -246,11 +247,34 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
       return Promise.reject(error);
     }
   };
+  const sendMessage = async (message: Partial<Message>): Promise<Message> => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/message`,
+        message,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
+        }
+      );
+      return response.data.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.message || "Error enviando el mensaje";
+        return Promise.reject(new Error(message));
+      }
+      return Promise.reject(error);
+    }
+  };
+
 
 
   return (
     <EmergencyContext.Provider
-      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests, showNotifications, aceptEmergencyRequest, readNotification, messages }}
+      value={{ createEmergencyRequest, emergencyRequests, currentEmergency, setCurrentEmergency, showVetEmergencyRequests, showNotifications, aceptEmergencyRequest, readNotification, messages, sendMessage }}
     >
       {children}
     </EmergencyContext.Provider>

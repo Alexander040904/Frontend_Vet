@@ -122,6 +122,8 @@ export default function VeterinarianDashboard() {
 
     const handleChatClick = (emergency: any) => {
         setCurrentEmergency(emergency)
+        console.log("Setting current emergency:", emergency);
+
         setActiveView('chat')
     }
 
