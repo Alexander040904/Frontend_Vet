@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { AlertTriangle, MessageCircle, Clock, User, CheckCircle, XCircle, PawPrint, } from "lucide-react";
 import { useAuth, type User as Vet } from "../../contexts/AuthContext";
-import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext2";
+import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext";
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
 import Profile from "../Profile";
 import Echo from '../../lib/echo';
 import { toast } from "sonner"
+
 
 export default function ClientDashboard() {
   const [activeView, setActiveView] = useState<"dashboard" | "emergency" | "chat" | "profile">("dashboard");
@@ -22,7 +23,7 @@ export default function ClientDashboard() {
   const [userRequests, setUserRequests] = useState<EmergencyRequest[]>([]);
   const [activeRequest, setActiveRequest] = useState<EmergencyRequest | undefined>();
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const requests = await emergencyRequests();
       setUserRequests(requests);
@@ -30,13 +31,16 @@ export default function ClientDashboard() {
       const acceptedRequest = requests.find((req) => req.status === "accepted");
       setActiveRequest(acceptedRequest);
 
+      console.log("✅ Requests actualizados:", requests);
     } catch (error) {
-      console.error("Error fetching requests:", error);
+      console.error("❌ Error fetching requests:", error);
     }
-  };
+  }, [emergencyRequests]);
 
   useEffect(() => {
     if (!user) return;
+    console.log("Fetching requests for user:", user);
+
 
     const channel = Echo.private(`client.${user.id}`)
       .listen('.EmergencyAccepted', (event: any) => {
@@ -58,14 +62,18 @@ export default function ClientDashboard() {
       });
 
     return () => {
+      console.log("Unsubscribing from channel:", `client.${user.id}`);
+
       channel.stopListening('.EmergencyAccepted');
     };
   }, [user]);
 
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    if (activeView === "dashboard") {
+      fetchRequests();
+    }
+  }, [activeView, fetchRequests]);
 
   const handleEmergencyClick = () => {
     setActiveView("emergency");
@@ -73,11 +81,12 @@ export default function ClientDashboard() {
 
   const handleChatClick = (emergency: any) => {
     setCurrentEmergency(emergency);
+    console.log("Setting current emergency:", emergency);
     setActiveView("chat");
   };
 
   if (activeView === "emergency") {
-    fetchRequests();
+
     return <EmergencyForm onBack={() => setActiveView("dashboard")} />;
   }
 
@@ -252,23 +261,23 @@ export default function ClientDashboard() {
                           </div>
                         </div>
                         <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                          <p>
-                            <strong>Síntomas:</strong> {request.symptoms}
-                            <p className="text-sm text-gray-500 flex items-center mt-1">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {request.created_at
-                                ? new Date(
-                                  request.created_at
-                                ).toLocaleDateString()
-                                : "Fecha no disponible"}{" "}
-                              a las{" "}
-                              {request.created_at
-                                ? new Date(
-                                  request.created_at
-                                ).toLocaleTimeString()
-                                : "Hora no disponible"}
-                            </p>
+
+                          <strong>Síntomas:</strong> {request.symptoms}
+                          <p className="text-sm text-gray-500 flex items-center mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {request.created_at
+                              ? new Date(
+                                request.created_at
+                              ).toLocaleDateString()
+                              : "Fecha no disponible"}{" "}
+                            a las{" "}
+                            {request.created_at
+                              ? new Date(
+                                request.created_at
+                              ).toLocaleTimeString()
+                              : "Hora no disponible"}
                           </p>
+
                         </div>
                       </div>
                     ))}

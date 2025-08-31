@@ -52,8 +52,10 @@ export default function Profile({ onBack }: ProfileProps) {
     const response = await updateProfile(payload);
     if (!response.status) {
       setError(response.message || "Error al actualizar el perfil");
+      setCorrect("");
     } else {
       setCorrect(response.message || "Perfil actualizado correctamente");
+      setError("");
     }
   };
 

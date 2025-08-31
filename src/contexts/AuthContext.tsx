@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simulamos la carga, puede ser llamada API o leer localStorage
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
+      console.log(user);
+
       const parsedUser = JSON.parse(storedUser);
 
       // Forzar que role_id siempre sea string
@@ -75,7 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Si quieres guardar el token
       const token = response.data.token;
       localStorage.setItem("auth_token", token);
-      setUser(response.data.user);
+      setUser({
+        ...response.data.user,
+        role_id: String(response.data.user.role_id) as UserRole
+      });
       // Si también quieres guardar datos del usuario
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
@@ -186,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateProfile = async (userData: Partial<User>):Promise<AuthResponse> => {
+  const updateProfile = async (userData: Partial<User>): Promise<AuthResponse> => {
     try {
       const response = await axios.patch(
         `${import.meta.env.VITE_API_URL}/profile`,
@@ -200,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       console.log("Profile updated successfully:", response.data.data);
-      
+
       localStorage.setItem("user", JSON.stringify(response.data.data));
       return {
         status: true,
@@ -217,7 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "Profile update failed:",
           error.response?.data || error.message
         );
-        
+
       } else {
         console.error("Unexpected error:", error);
       }
@@ -225,44 +230,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         status: false,
         message: errorMessage,
       };
-    
-  };
-}
 
-const deleteProfile = async (): Promise<AuthResponse> => {
-  try {
-    await axios.delete(`${import.meta.env.VITE_API_URL}/profile`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-      },
-    });
-
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user");
-    setUser(null);
-
-    return {
-      status: true,
-      message: "Perfil eliminado correctamente",
-    };
-  } catch (error: unknown) {
-    console.error("Error deleting profile:", error);
-
-    let errorMessage = "Error al eliminar el perfil. Por favor, inténtalo de nuevo más tarde.";
-    if (axios.isAxiosError(error)) {
-      errorMessage =
-        (error.response?.data as { message?: string })?.message ||
-        error.message ||
-        errorMessage;
-    }
-
-    return {
-      status: false,
-      message: errorMessage,
     };
   }
-};
+
+  const deleteProfile = async (): Promise<AuthResponse> => {
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/profile`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+        },
+      });
+
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
+      setUser(null);
+
+      return {
+        status: true,
+        message: "Perfil eliminado correctamente",
+      };
+    } catch (error: unknown) {
+      console.error("Error deleting profile:", error);
+
+      let errorMessage = "Error al eliminar el perfil. Por favor, inténtalo de nuevo más tarde.";
+      if (axios.isAxiosError(error)) {
+        errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          error.message ||
+          errorMessage;
+      }
+
+      return {
+        status: false,
+        message: errorMessage,
+      };
+    }
+  };
 
 
   return (
