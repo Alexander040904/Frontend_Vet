@@ -97,12 +97,7 @@ export default function Chat({ onBack }: ChatProps) {
 
 
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
+
 
   if (!currentEmergency) {
     return (
@@ -147,10 +142,7 @@ export default function Chat({ onBack }: ChatProps) {
 
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-medium">Tiempo restante:</p>
-              <p className="text-lg font-bold text-red-600">{formatTime(timeLeft)}</p>
-            </div>
+
           </div>
         </div>
       </header>
