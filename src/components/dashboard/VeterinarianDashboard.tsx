@@ -9,7 +9,7 @@ import { Badge } from '../ui/badge'
 import { MessageCircle, User, LogOut, Check, X, Bell, PawPrint } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
-import { useEmergency } from '../../contexts/EmergencyContext2'
+import { useEmergency } from '../../contexts/EmergencyContext'
 
 import Chat from '../Chat'
 import Profile from '../Profile'
@@ -19,11 +19,13 @@ export default function VeterinarianDashboard() {
 
 
 
+
     const [activeView, setActiveView] = useState<'dashboard' | 'chat' | 'profile'>('dashboard')
 
 
     /*     const { emergencyRequests, acceptEmergencyRequest, rejectEmergencyRequest, setCurrentEmergency } = useEmergency() */
     const { user } = useAuth()
+
     const { showNotifications, emergencyRequests, aceptEmergencyRequest, readNotification, setCurrentEmergency } = useEmergency()
 
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -41,34 +43,43 @@ export default function VeterinarianDashboard() {
             console.log("📬 Emergencias recibidas:", responseEmergencies);
 
         } catch (error) {
-
+            console.error("Error fetching notifications or emergencies:", error);
         }
     };
 
     useEffect(() => {
+        if (!user) return;
         console.log("📡 Suscribiéndose al canal emergencies.admin...");
 
-        const channel = Echo.private("emergencies.admin")
+        const channel = Echo.private(`emergencies.admin.${user.id}`)
             .listen(".EmergencyNotification", (event: any) => {
-                console.log("🚨 Notificación de emergencia recibida:", event);
 
 
-                toast.success("Event has been created", {
-                    description: <span className="text-sm md:text-base">{event.message}</span>,
+                if (event.id !== localStorage.getItem("last_notification_id")) {
+                    console.log("🚨 Notificación de emergencia recibida:", event);
 
-                    action: {
-                        label: "Ver",
-                        onClick: () => setActiveView('dashboard'),
-                    },
-                })
 
-                fetchNotifications();
+                    toast.success("Nueva emergencia", {
+                        description: <span className="text-sm md:text-base">{event.message}</span>,
+
+                        action: {
+                            label: "Ver",
+                            onClick: () => setActiveView('dashboard'),
+                        },
+                    })
+
+                    localStorage.setItem("last_notification_id", event.id);
+
+                    fetchNotifications();
+                }
+
             });
 
         // Cleanup al desmontar el componente
         return () => {
             console.log("❌ Desuscribiéndose del canal emergencies.admin");
             channel.stopListening(".EmergencyNotification");
+            Echo.leave(`emergencies.admin.${user.id}`);
         };
     }, []);
 

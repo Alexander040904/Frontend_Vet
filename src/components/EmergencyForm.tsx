@@ -22,7 +22,7 @@ import {
 } from "./ui/select";
 import { ArrowLeft, PawPrint } from "lucide-react";
 
-import { useEmergency } from "../contexts/EmergencyContext2";
+import { useEmergency } from "../contexts/EmergencyContext";
 
 interface EmergencyFormProps {
   onBack: () => void;

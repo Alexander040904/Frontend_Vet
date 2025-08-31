@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "../u
 import { Badge } from "../ui/badge";
 import { AlertTriangle, MessageCircle, Clock, User, CheckCircle, XCircle, PawPrint, } from "lucide-react";
 import { useAuth, type User as Vet } from "../../contexts/AuthContext";
-import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext2";
+import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext";
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
 import Profile from "../Profile";
@@ -39,6 +39,8 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     if (!user) return;
+    console.log("Fetching requests for user:", user);
+
 
     const channel = Echo.private(`client.${user.id}`)
       .listen('.EmergencyAccepted', (event: any) => {
@@ -60,6 +62,8 @@ export default function ClientDashboard() {
       });
 
     return () => {
+      console.log("Unsubscribing from channel:", `client.${user.id}`);
+
       channel.stopListening('.EmergencyAccepted');
     };
   }, [user]);

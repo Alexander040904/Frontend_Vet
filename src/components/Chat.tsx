@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft, PawPrint, Send } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { type Message } from '../types/Chat/Message'
-import { useEmergency } from '../contexts/EmergencyContext2'
+import { useEmergency } from '../contexts/EmergencyContext'
 import Echo from '@/lib/echo'
 
 
@@ -128,15 +128,23 @@ export default function Chat({ onBack }: ChatProps) {
                 Volver
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-blue-600">
-                  Chat de Emergencia
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {user?.role_id === '2'
-                    ? `Con Dr. ${currentEmergency.vet_name}`
-                    : `Con ${currentEmergency.client_name}`
-                  }
-                </p>
+                <div className="flex items-center space-x-3">
+                  <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-lg shadow-lg">
+                    <PawPrint className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                      VetEmergency
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      {user?.role_id === '2'
+                        ? `Chat Con Dr. ${currentEmergency.vet_name}`
+                        : `Chat Con ${currentEmergency.client_name}`
+                      }
+                    </p>
+                  </div>
+                </div>
+
               </div>
             </div>
             <div className="text-right">
