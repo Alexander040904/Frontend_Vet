@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from './ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Card, CardContent } from './ui/card'
 import { Input } from './ui/input'
 import { ArrowLeft, PawPrint, Send } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'

@@ -13,7 +13,7 @@ window.Pusher = Pusher;
 window.Echo = new Echo<'reverb'>({
   broadcaster: "reverb",
   key: import.meta.env.VITE_REVERB_APP_KEY as string, // Explicitly cast environment variable
-  authorizer: (channel, options) => {
+  authorizer: (channel) => {
     return {
       authorize: (socketId: string, callback: (error: Error | null, data: any) => void) => {
         axios

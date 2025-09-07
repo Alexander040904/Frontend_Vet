@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { AlertTriangle, MessageCircle, Clock, User, CheckCircle, XCircle, PawPrint, } from "lucide-react";
-import { useAuth, type User as Vet } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useEmergency, type EmergencyRequest, } from "../../contexts/EmergencyContext";
 import EmergencyForm from "../EmergencyForm";
 import Chat from "../Chat";
