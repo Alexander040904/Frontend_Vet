@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { MessageCircle, User, LogOut, Check, X, Bell, PawPrint } from 'lucide-react'
+import { MessageCircle, User, Check, X, Bell, PawPrint } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 import { useEmergency } from '../../contexts/EmergencyContext'
