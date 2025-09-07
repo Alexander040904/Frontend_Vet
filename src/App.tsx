@@ -1,84 +1,35 @@
-import { useEffect, useState } from "react";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { EmergencyProvider } from "./contexts/EmergencyContext";
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
 
-import Login from "./components/auth/Login";
-import Register from "./components/auth/Register";
-import LandingPage from "./components/LadingPage";
-import ClientDashboard from "./components/dashboard/ClientDashboard";
-import VeterinarianDashboard from "./components/dashboard/VeterinarianDashboard";
+function App() {
+  const [count, setCount] = useState(0)
 
-function AppContent() {
-
-  const { logout } = useAuth();
-
-  const [currentView, setCurrentView] = useState<
-    "landing" | "login" | "register"
-  >("landing");
-
-  const { user, loading } = useAuth();
-  console.log("Current user in App.tsx:", user);
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    const expiration = localStorage.getItem("token_expiration");
-
-    if (user && token && expiration) {
-      const now = new Date().getTime();
-      if (now > parseInt(expiration)) {
-        logout();
-      } else {
-        const timeout = parseInt(expiration) - now;
-        const timer = setTimeout(() => logout(), timeout);
-
-        return () => clearTimeout(timer); // limpiar si el componente se desmonta
-      }
-    }
-  }, [user, logout]);
-
-  // ⏳ Mientras carga el usuario, mostramos un spinner
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Cargando...
-      </div>
-    );
-  } else if (user && localStorage.getItem("auth_token")) {
-    return user.role_id === "2" ? <ClientDashboard /> : <VeterinarianDashboard />;
-  }
-
-  else {
-    // Si no hay usuario, renderizamos las vistas de landing/login/register
-    switch (currentView) {
-      case "landing":
-        return <LandingPage onGetStarted={() => setCurrentView("login")} />;
-      case "login":
-        return (
-          <Login
-            onSwitchToRegister={() => setCurrentView("register")}
-            onBack={() => setCurrentView("landing")}
-          />
-        );
-      case "register":
-        return (
-          <Register
-            onSwitchToLogin={() => setCurrentView("login")}
-            onBack={() => setCurrentView("landing")}
-          />
-        );
-      default:
-        return <LandingPage onGetStarted={() => setCurrentView("login")} />;
-    }
-  }
-
-
-}
-
-export default function App() {
   return (
-    <AuthProvider>
-      <EmergencyProvider>
-        <AppContent />
-      </EmergencyProvider>
-    </AuthProvider>
-  );
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 2)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
 }
+
+export default App
