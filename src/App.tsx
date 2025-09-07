@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { EmergencyProvider } from "./contexts/EmergencyContext";
 
@@ -9,12 +9,31 @@ import ClientDashboard from "./components/dashboard/ClientDashboard";
 import VeterinarianDashboard from "./components/dashboard/VeterinarianDashboard";
 
 function AppContent() {
+
+  const { logout } = useAuth();
+
   const [currentView, setCurrentView] = useState<
     "landing" | "login" | "register"
   >("landing");
 
   const { user, loading } = useAuth();
   console.log("Current user in App.tsx:", user);
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    const expiration = localStorage.getItem("token_expiration");
+
+    if (user && token && expiration) {
+      const now = new Date().getTime();
+      if (now > parseInt(expiration)) {
+        logout();
+      } else {
+        const timeout = parseInt(expiration) - now;
+        const timer = setTimeout(() => logout(), timeout);
+
+        return () => clearTimeout(timer); // limpiar si el componente se desmonta
+      }
+    }
+  }, [user, logout]);
 
   // ⏳ Mientras carga el usuario, mostramos un spinner
   if (loading) {

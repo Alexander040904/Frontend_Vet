@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       // Si también quieres guardar datos del usuario
       localStorage.setItem("user", JSON.stringify(response.data.user));
+      const expirationTime = new Date().getTime() + 4 * 60 * 60 * 1000;
+      localStorage.setItem("token_expiration", expirationTime.toString());
 
       return {
         status: true,
@@ -127,7 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Guardar el usuario registrado
       localStorage.setItem("auth_token", response.data.token.plainTextToken);
       localStorage.setItem("user", JSON.stringify(response.data.data));
-
+      const expirationTime = new Date().getTime() + 4 * 60 * 60 * 1000;
+      localStorage.setItem("token_expiration", expirationTime.toString());
       console.log("Toke: ", localStorage.getItem("auth_token"));
 
       return {
@@ -173,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Logout successful:", response.data);
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user");
+      localStorage.removeItem("token_expiration");
       setUser(null);
     } catch (err: unknown) {
       let errorMessage = "Error al iniciar sesión";
