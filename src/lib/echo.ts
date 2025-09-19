@@ -17,7 +17,7 @@ window.Echo = new Echo<'reverb'>({
     return {
       authorize: (socketId: string, callback: (error: Error | null, data: any) => void) => {
         axios
-          .post("http://localhost:8089/api/broadcasting/auth", {
+          .post(`${import.meta.env.VITE_API_URL}/broadcasting/auth`, {
             socket_id: socketId,
             channel_name: channel.name,
           },{
